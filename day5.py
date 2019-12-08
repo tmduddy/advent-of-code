@@ -1,27 +1,30 @@
 import csv
 
-goal = 19690720
-
 with open('input-files/day5.csv', 'r') as input_csv:
     reader = csv.reader(input_csv, delimiter=',')
     test_intcode = [instruction for instruction in reader][0]
 
 def parse_intcode(intcode, init_input=1):
-    pos = 0
+    pos = 0 # initialize pointer position
     loop = True
-    counter = 0
-    value = init_input
+    counter = 0 # counter to prevent infinite looping
+    max_count = 1000
+
+    value = init_input # provide initial value as stated in question
     
     while loop:
+        # aim the compiler at the current position and read the input as an instruction
         pointer = intcode[pos]
         instruction = int(pointer) if len(pointer) < 2 or pointer == 99 else int(pointer[-2:])
         
-        if instruction == 99 or counter > 1000:
+
+        if instruction == 99 or counter > max_count:
             loop = False
             halt_string = 'HLT: 99' if instruction == 99 else 'HLT: counter_overload'
             print(halt_string)
             break
 
+        # account for varying number of digits in instruction
         param_1_mode = 0 if len(pointer) < 3 else pointer[-3]
         param_2_mode = 0 if len(pointer) < 4 else pointer[-4]
 
