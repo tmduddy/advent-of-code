@@ -11,9 +11,11 @@ def parse_intcode(intcode, init_input=1):
     loop = True
     counter = 0
     value = init_input
+
     while loop:
         pointer = intcode[pos]
         instruction = int(pointer) if len(pointer) < 2 or pointer == 99 else int(pointer[-2:])
+        
         if instruction == 99 or counter > 100000:
             loop = False
             halt_string = '99: halted' if instruction == 99 else 'counter_overload: halted'
@@ -24,24 +26,25 @@ def parse_intcode(intcode, init_input=1):
         param_2_mode = 0 if len(pointer) < 4 else pointer[-4]
 
         if instruction in [1, 2]:
-            index_1 = int(intcode[pos+1]) if param_1_mode == 0 else pos+1
-            index_2 = int(intcode[pos+2]) if param_2_mode == 0 else pos+2
+            index_1 = int(intcode[pos+1]) if int(param_1_mode) == 0 else pos+1
+            index_2 = int(intcode[pos+2]) if int(param_2_mode) == 0 else pos+2
+            
             param_1 = intcode[index_1]
             param_2 = intcode[index_2]
 
-            result =  int(param_1) + int(param_2) if instruction == 1 else int(param_1) * int(param_2)
+            result =  (int(param_1) + int(param_2)) if instruction == 1 else (int(param_1) * int(param_2))
 
-            star_1 = '*' if param_1_mode else ' '
-            star_2 = '*' if param_2_mode else ' '
             op = '+' if instruction == 1 else '*'
-            print(f'\t{param_1}[{index_1}] {op} {param_2}[{index_2}] = {result} to index {intcode[pos+3]}')
+            print(f'\t{param_1} {op} {param_2} = {result}')
+            print(f'\t\t{index_1}, {index_2} to index {intcode[pos+3]}')
+            print(f'\t\t{param_1_mode}, {param_2_mode} to index {intcode[pos+3]}')
 
             intcode[int(intcode[pos+3])] = str(result)
             pos += 4
         elif instruction == 3:
             index = int(intcode[pos+1])
             intcode[index] = str(value)
-            print(f'storing value: {value} in position: {intcode[index]}')
+            print(f'storing value: {value} in position: {index}')
             pos += 2
         elif instruction == 4:
             param_1 = intcode[int(intcode[pos+1])] if param_1_mode == 0 else intcode[pos+1]
