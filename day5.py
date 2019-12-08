@@ -11,14 +11,14 @@ def parse_intcode(intcode, init_input=1):
     loop = True
     counter = 0
     value = init_input
-
+    
     while loop:
         pointer = intcode[pos]
         instruction = int(pointer) if len(pointer) < 2 or pointer == 99 else int(pointer[-2:])
         
-        if instruction == 99 or counter > 100000:
+        if instruction == 99 or counter > 1000:
             loop = False
-            halt_string = '99: halted' if instruction == 99 else 'counter_overload: halted'
+            halt_string = 'HLT: 99' if instruction == 99 else 'HLT: counter_overload'
             print(halt_string)
             break
 
@@ -35,22 +35,63 @@ def parse_intcode(intcode, init_input=1):
             result =  (int(param_1) + int(param_2)) if instruction == 1 else (int(param_1) * int(param_2))
 
             op = '+' if instruction == 1 else '*'
-            print(f'\t{param_1} {op} {param_2} = {result}')
-            print(f'\t\t{index_1}, {index_2} to index {intcode[pos+3]}')
-            print(f'\t\t{param_1_mode}, {param_2_mode} to index {intcode[pos+3]}')
+            print(f'\tAOM: {param_1} {op} {param_2} = {result}')
+            print(f'\t -> AOM: index: {index_1}, {index_2} to index {intcode[pos+3]}')
+
 
             intcode[int(intcode[pos+3])] = str(result)
             pos += 4
         elif instruction == 3:
             index = int(intcode[pos+1])
             intcode[index] = str(value)
-            print(f'storing value: {value} in position: {index}')
+            print(f'INP: storing input {value} at index: {index}')
             pos += 2
         elif instruction == 4:
             param_1 = intcode[int(intcode[pos+1])] if param_1_mode == 0 else intcode[pos+1]
-            print(f'{param_1} = output')
+            print(f'OUT = {param_1}')
             value = param_1
             pos += 2
+        elif instruction in [5, 6]:
+            index_1 = int(intcode[pos+1]) if int(param_1_mode) == 0 else pos+1
+            index_2 = int(intcode[pos+2]) if int(param_2_mode) == 0 else pos+2
+            
+            param_1 = int(intcode[index_1])
+            param_2 = int(intcode[index_2])
+
+            if instruction == 5:
+                if param_1 != 0:
+                    pos = param_2
+                    print(f'\tJIT: {param_1} != 0; pos JUMP to {param_2}')
+                else:
+                    pos += 3
+                    print(f'\tJIT: {param_1} == 0; pos += 3 ({pos})')
+            elif instruction == 6:
+                if param_1 == 0:
+                    pos = param_2
+                    print(f'\tJIF: {param_1} == 0; pos JUMP to {param_2}')
+                else:
+                    pos += 3
+                    print(f'\tJIF: {param_1} != 0; pos += 3 ({pos})')
+        elif instruction in [7, 8]:
+            index_1 = int(intcode[pos+1]) if int(param_1_mode) == 0 else pos+1
+            index_2 = int(intcode[pos+2]) if int(param_2_mode) == 0 else pos+2
+            index_result = int(intcode[pos+3])
+
+            param_1 = int(intcode[index_1])
+            param_2 = int(intcode[index_2])
+
+            if instruction == 7:
+                result = 1 if (param_1 < param_2) else 0
+                op = "<" if (param_1 < param_2) else "!<"
+                intcode[index_result] = result
+                print(f'\t1G2: {param_1} {op} {param_2}; storing {result} in {index_result}')
+            else:
+                result = 1 if (param_1 == param_2) else 0
+                op = '==' if (param_1 == param_2) else '!='
+                intcode[index_result] = result
+                print(f'\t1E2: {param_1} {op} {param_2}; storing {result} in {index_result}')
+            pos += 4
+
         else:
             print(counter, pos, pointer, instruction, param_1_mode, param_2_mode)
             print('bad instruction: ' + str(instruction))
@@ -59,4 +100,4 @@ def parse_intcode(intcode, init_input=1):
         #print(pos, pointer, instruction, param_1_mode, param_2_mode)
         counter += 1
 
-parse_intcode(test_intcode)
+parse_intcode(test_intcode, 5)
