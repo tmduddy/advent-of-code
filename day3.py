@@ -20,7 +20,7 @@ def generate_moves(wire):
     x_1, y_1 = start
 
     all_points = []
-
+    segment = 0
     for move in wire:
         direction = move[0]
         magnitude = int(move[1:])
@@ -41,7 +41,11 @@ def generate_moves(wire):
             x_range = range(x_1, x_1 + magnitude + 1)
             points = [(x, y_1) for x in x_range]
             x_1 += magnitude
-        all_points.append(points)
+        if segment == 0:
+            all_points.append(points)
+        else:
+            all_points.append(points[1:])
+        segment += 1
     return all_points
 
 wire_1_points = [point for move_list in generate_moves(wire_1) for point in move_list]
@@ -49,7 +53,6 @@ wire_1_set = set(wire_1_points)
 
 wire_2_points = [point for move_list in generate_moves(wire_2) for point in move_list]
 wire_2_set = set(wire_2_points)
-
 
 intersections = list(wire_1_set.intersection(wire_2_set))
 intersections.remove((0,0))
