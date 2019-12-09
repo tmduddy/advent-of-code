@@ -1,5 +1,4 @@
 import csv
-from time import time
 
 with open('input-files/day7.csv', 'r') as input_csv:
     reader = csv.reader(input_csv, delimiter=',')
@@ -24,7 +23,8 @@ def parse_intcode(intcode, init_input, amp_input, debug=False):
         if instruction == 99 or counter > max_count:
             loop = False
             halt_string = 'HLT: 99' if instruction == 99 else 'HLT: counter_overload'
-            print(halt_string)
+            if debug:
+                print(halt_string)
             break
 
         # account for varying number of digits in instruction
@@ -125,15 +125,37 @@ def run_thrusters(input_list, intcode=master_intcode):
 
     return output_e
 
-def generate_combinations(num_digits, max_individual_digit):
-    low = int('1' * num_digits)
+def generate_combinations(num_digits, min_individual_digit, max_individual_digit):
+    low = int(str(min_individual_digit) * (num_digits-1))
     high = int(str(max_individual_digit) * num_digits)
-    return [num for num in range(low, high) if len(set(str(num))) == num_digits]
+    return_list = []
+    for num in range(low, high):
+        '''
+            if:
+                the max digit <= max_ind_digit
+                AND (
+                    number of unique digits == num_digits
+                    OR (
+                        number of unique digits in '0'+number == num digits
+                        AND len('0'+number) == num_digits
+                    )
+                ): return_list.append(num or '0'+num as appropriate)
+        '''
+        if int(max(list(str(num)))) <= max_individual_digit \
+            and ( \
+                (len(set('0' + str(num))) == num_digits \
+                    and len(str(num)) == (num_digits - 1))
+                or len(set(str(num))) == num_digits
+            ):
+            str_num = '0'*(num_digits - len(str(num))) + str(num)
+            return_list.append(str_num)
+    return return_list
 
-all_inputs = generate_combinations(6, 4)
-all_outputs = list(map(run_thrusters, all_inputs))
-# start = time()
-# print(run_thrusters(master_intcode, [4,3,2,1,0]))
-# end = time()
-# time = end - start
-# print(f'{round(time, 4)}s')
+all_inputs = generate_combinations(5, 0, 4)
+
+results = {}
+for input in all_inputs:
+    results[''.join(input)] = run_thrusters(input)
+
+max_key = max(results, key=results.get)
+print(f'{max_key}: {results[max_key]}')
