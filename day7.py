@@ -4,15 +4,15 @@ with open('input-files/day7.csv', 'r') as input_csv:
     reader = csv.reader(input_csv, delimiter=',')
     master_intcode = [instruction for instruction in reader][0]
 
-def parse_intcode(intcode, init_input, amp_input, debug=False):
-    pos = 0 # initialize pointer position
+def parse_intcode(intcode, init_input, amp_input, init=False, init_pos=0, halt_on_output=False, debug=False):
+    pos = init_pos # initialize pointer position
     loop = True
     counter = 0 # counter to prevent infinite looping
     max_count = 1000
 
     input_counter = 0 # each cycle needs two inputs, this flag decides which to use
 
-    value = init_input
+    value = init_input if init else amp_input
     
     while loop:
         # aim the compiler at the current position and read the input as an instruction
@@ -23,6 +23,7 @@ def parse_intcode(intcode, init_input, amp_input, debug=False):
         if instruction == 99 or counter > max_count:
             loop = False
             halt_string = 'HLT: 99' if instruction == 99 else 'HLT: counter_overload'
+            halt_code = 99 if instruction == 99 else 0
             if debug:
                 print(halt_string)
             break
@@ -49,7 +50,7 @@ def parse_intcode(intcode, init_input, amp_input, debug=False):
             pos += 4
         elif instruction == 3:
             index = int(intcode[pos+1])
-            intcode[index] = str(init_input) if input_counter == 0 else str(amp_input)
+            intcode[index] = value
             input_counter += 1
             if debug:
                 print(f'INP: storing input {value} at index: {index}')
@@ -60,6 +61,9 @@ def parse_intcode(intcode, init_input, amp_input, debug=False):
                 print(f'OUT = {param_1}')
             value = param_1
             pos += 2
+            if halt_on_output:
+                halt_code = 4
+                return (value, halt_code, pos)
         elif instruction in [5, 6]:
             index_1 = int(intcode[pos+1]) if int(param_1_mode) == 0 else pos+1
             index_2 = int(intcode[pos+2]) if int(param_2_mode) == 0 else pos+2
@@ -114,48 +118,85 @@ def parse_intcode(intcode, init_input, amp_input, debug=False):
             break
         counter += 1
 
-    return value
+    return (value, halt_code, pos)
 
-def run_thrusters(input_list, intcode=master_intcode):
-    output_a = parse_intcode(intcode, input_list[0], 0)
-    output_b = parse_intcode(intcode, input_list[1], output_a)
-    output_c = parse_intcode(intcode, input_list[2], output_b)
-    output_d = parse_intcode(intcode, input_list[3], output_c)
-    output_e = parse_intcode(intcode, input_list[4], output_d)
-
-    return output_e
+def run_thrusters(input_list, init_value, halt_code=99, ic=master_intcode):
+    e_halt = False
+    counter = 0
+    pos_a, pos_b, pos_c, pos_d, pos_e = (0, 0, 0, 0, 0)
+    init = True
+    while not e_halt:
+        a = parse_intcode(ic, input_list[0], init_value, init=init, init_pos=pos_a, halt_on_output=True, debug=True)
+        output_a = a[0]
+        pos_a = a[2]
+        b = parse_intcode(ic, input_list[1], output_a, init=init, init_pos=pos_b, halt_on_output=True, debug=True)
+        output_b = b[0]
+        pos_b = b[2]
+        c = parse_intcode(ic, input_list[2], output_b, init=init, init_pos=pos_c, halt_on_output=True, debug=True)
+        output_c = c[0]
+        pos_c = c[2]
+        d = parse_intcode(ic, input_list[3], output_c, init=init, init_pos=pos_d, halt_on_output=True, debug=True)
+        output_d = c[0]
+        pos_d = d[2]
+        e = parse_intcode(ic, input_list[4], output_d, init=init, init_pos=pos_e, halt_on_output=True, debug=True)
+        output_e = e[0]
+        pos_e = e[2]
+        halt_e = e[1]
+        init_value = output_e[0]
+        counter += 1
+        init = False
+        # if counter % 100 == 0:
+        #     print(counter, e[1])
+        if halt_e == halt_code or counter == 10000:
+            e_halt = True
+    return (output_e[0], ic)
 
 def generate_combinations(num_digits, min_individual_digit, max_individual_digit):
     low = int(str(min_individual_digit) * (num_digits-1))
     high = int(str(max_individual_digit) * num_digits)
     return_list = []
-    for num in range(low, high):
-        '''
-            if:
-                the max digit <= max_ind_digit
-                AND (
-                    number of unique digits == num_digits
-                    OR (
-                        number of unique digits in '0'+number == num digits
-                        AND len('0'+number) == num_digits
-                    )
-                ): return_list.append(num or '0'+num as appropriate)
-        '''
-        if int(max(list(str(num)))) <= max_individual_digit \
-            and ( \
-                (len(set('0' + str(num))) == num_digits \
-                    and len(str(num)) == (num_digits - 1))
-                or len(set(str(num))) == num_digits
-            ):
-            str_num = '0'*(num_digits - len(str(num))) + str(num)
-            return_list.append(str_num)
-    return return_list
+    if min_individual_digit == 0:
+        for num in range(low, high):
+            '''
+                if:
+                    the max digit <= max_ind_digit
+                    AND (
+                        number of unique digits == num_digits
+                        OR (
+                            number of unique digits in '0'+number == num digits
+                            AND len('0'+number) == num_digits
+                        )
+                    ): return_list.append(num or '0'+num as appropriate)
+            '''
+            if int(max(list(str(num)))) <= max_individual_digit \
+                and ( \
+                    (len(set('0' + str(num))) == num_digits \
+                        and len(str(num)) == (num_digits - 1))
+                    or len(set(str(num))) == num_digits
+                ):
+                str_num = '0'*(num_digits - len(str(num))) + str(num)
+                return_list.append(str_num)
+        return return_list
+    else:
+        for num in range(low, high):
+            if int(max(list(str(num)))) <= max_individual_digit \
+                and int(min(list(str(num)))) >= min_individual_digit \
+                and len(set(str(num))) == num_digits:
+                return_list.append(str(num))
+        return return_list
 
-all_inputs = generate_combinations(5, 0, 4)
+# all_inputs = generate_combinations(5, 5, 9)
 
 results = {}
-for input in all_inputs:
-    results[''.join(input)] = run_thrusters(input)
+# for input in all_inputs:
+#     print(input)
+#     results[''.join(input)] = run_thrusters(input, init_value=0, halt_code=4)[0]
+
+# max_key = max(results, key=results.get)
+# print(f'{max_key}: {results[max_key]}')
+
+input = [str(i) for i in range(9, 4, -1)]
+results[''.join(input)] = run_thrusters(input, init_value=0, halt_code=99)[0]
 
 max_key = max(results, key=results.get)
 print(f'{max_key}: {results[max_key]}')
