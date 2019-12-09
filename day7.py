@@ -1,24 +1,24 @@
 import csv
 
-with open('input-files/day7.csv', 'r') as input_csv:
-    reader = csv.reader(input_csv, delimiter=',')
-    master_intcode = [instruction for instruction in reader][0]
+def get_fresh_intcode():
+    with open('input-files/day7.csv', 'r') as input_csv:
+        reader = csv.reader(input_csv, delimiter=',')
+        return [instruction for instruction in reader][0]
 
-def parse_intcode(intcode, init_input, amp_input, init=False, init_pos=0, halt_on_output=False, debug=False):
+def parse_intcode(ic, init_input, amp_input, init=False, init_pos=0, halt_on_output=False, debug=False):
+    intcode = ic
     pos = init_pos # initialize pointer position
     loop = True
     counter = 0 # counter to prevent infinite looping
-    max_count = 1000
-
-    input_counter = 0 # each cycle needs two inputs, this flag decides which to use
-
-    value = init_input if init else amp_input
+    max_count = 100000
     
     while loop:
         # aim the compiler at the current position and read the input as an instruction
         pointer = intcode[pos]
         instruction = int(pointer) if len(pointer) < 2 or pointer == 99 else int(pointer[-2:])
         
+        # set the INP value based on cycle count (init T/F)
+        value = init_input if init else amp_input
 
         if instruction == 99 or counter > max_count:
             loop = False
@@ -43,7 +43,7 @@ def parse_intcode(intcode, init_input, amp_input, init=False, init_pos=0, halt_o
 
             op = '+' if instruction == 1 else '*'
             if debug:
-                print(f'\tAOM: {param_1} {op} {param_2} = {result}')
+                print(f'\tAOM: {param_1} {op} {param_2} = {result} to index {intcode[pos+3]}')
                 #print(f'\t -> AOM: index: {index_1}, {index_2} to index {intcode[pos+3]}')
 
             intcode[int(intcode[pos+3])] = str(result)
@@ -51,19 +51,21 @@ def parse_intcode(intcode, init_input, amp_input, init=False, init_pos=0, halt_o
         elif instruction == 3:
             index = int(intcode[pos+1])
             intcode[index] = value
-            input_counter += 1
+            init = False
             if debug:
-                print(f'INP: storing input {value} at index: {index}')
+                print(f'\tINP: storing input {value} at index: {index}')
             pos += 2
         elif instruction == 4:
             param_1 = intcode[int(intcode[pos+1])] if param_1_mode == 0 else intcode[pos+1]
             if debug:
-                print(f'OUT = {param_1}')
+                print(f'\tOUT = {param_1}')
             value = param_1
             pos += 2
             if halt_on_output:
                 halt_code = 4
-                return (value, halt_code, pos)
+                if debug:
+                    print(f'HLT: halt on out enabled')
+                break
         elif instruction in [5, 6]:
             index_1 = int(intcode[pos+1]) if int(param_1_mode) == 0 else pos+1
             index_2 = int(intcode[pos+2]) if int(param_2_mode) == 0 else pos+2
@@ -113,43 +115,52 @@ def parse_intcode(intcode, init_input, amp_input, init=False, init_pos=0, halt_o
 
         else:
             print(counter, pos, pointer, instruction, param_1_mode, param_2_mode)
-            print('bad instruction: ' + str(instruction))
+            print('\t***bad instruction: ' + str(instruction))
             loop = False
             break
         counter += 1
 
-    return (value, halt_code, pos)
+    return (value, halt_code, pos, intcode)
 
-def run_thrusters(input_list, init_value, halt_code=99, ic=master_intcode):
+def run_thrusters(input_list, init_value, halt_code=99, num_amps=5, debug=False):
+    a_ic, b_ic, c_ic, d_ic, e_ic = (get_fresh_intcode(), get_fresh_intcode(), get_fresh_intcode(), get_fresh_intcode(), get_fresh_intcode())
+    a_pos, b_pos, c_pos, d_pos, e_pos = (0, 0, 0, 0, 0)
+    a_init, b_init, c_init, d_init, e_init = (i for i in input_list)
+    # initial conditions so that loop 1 is different
+    e_out = init_value
     e_halt = False
-    counter = 0
-    pos_a, pos_b, pos_c, pos_d, pos_e = (0, 0, 0, 0, 0)
     init = True
+    counter = 0
     while not e_halt:
-        a = parse_intcode(ic, input_list[0], init_value, init=init, init_pos=pos_a, halt_on_output=True, debug=True)
-        output_a = a[0]
-        pos_a = a[2]
-        b = parse_intcode(ic, input_list[1], output_a, init=init, init_pos=pos_b, halt_on_output=True, debug=True)
-        output_b = b[0]
-        pos_b = b[2]
-        c = parse_intcode(ic, input_list[2], output_b, init=init, init_pos=pos_c, halt_on_output=True, debug=True)
-        output_c = c[0]
-        pos_c = c[2]
-        d = parse_intcode(ic, input_list[3], output_c, init=init, init_pos=pos_d, halt_on_output=True, debug=True)
-        output_d = c[0]
-        pos_d = d[2]
-        e = parse_intcode(ic, input_list[4], output_d, init=init, init_pos=pos_e, halt_on_output=True, debug=True)
-        output_e = e[0]
-        pos_e = e[2]
-        halt_e = e[1]
-        init_value = output_e[0]
-        counter += 1
+        a = parse_intcode(a_ic, a_init, e_out, init, a_pos, halt_on_output=True, debug=debug)
+        a_out = a[0]
+        a_pos = a[2]
+        a_ic = a[3]
+        b = parse_intcode(b_ic, b_init, a_out, init, b_pos, halt_on_output=True, debug=debug)
+        b_out = b[0]
+        b_pos = b[2]
+        b_ic = b[3]
+        c = parse_intcode(c_ic, c_init, b_out, init, c_pos, halt_on_output=True, debug=debug)
+        c_out = c[0]
+        c_pos = c[2]
+        c_ic = c[3]
+        d = parse_intcode(d_ic, d_init, c_out, init, d_pos, halt_on_output=True, debug=debug)
+        d_out = d[0]
+        d_pos = d[2]
+        d_ic = d[3]
+        e = parse_intcode(e_ic, e_init, d_out, init, e_pos, halt_on_output=True, debug=debug)
+        e_out = e[0]
+        e_code = e[1]
+        e_pos = e[2]
+        e_ic = e[3]
+        
         init = False
-        # if counter % 100 == 0:
-        #     print(counter, e[1])
-        if halt_e == halt_code or counter == 10000:
-            e_halt = True
-    return (output_e[0], ic)
+        counter += 1
+        if e_code == 99:
+            break
+    # end while
+    #print(counter)
+    return int(e_out)
 
 def generate_combinations(num_digits, min_individual_digit, max_individual_digit):
     low = int(str(min_individual_digit) * (num_digits-1))
@@ -185,18 +196,12 @@ def generate_combinations(num_digits, min_individual_digit, max_individual_digit
                 return_list.append(str(num))
         return return_list
 
-# all_inputs = generate_combinations(5, 5, 9)
-
+all_inputs = generate_combinations(5, 5, 9)
 results = {}
-# for input in all_inputs:
-#     print(input)
-#     results[''.join(input)] = run_thrusters(input, init_value=0, halt_code=4)[0]
-
-# max_key = max(results, key=results.get)
-# print(f'{max_key}: {results[max_key]}')
-
-input = [str(i) for i in range(9, 4, -1)]
-results[''.join(input)] = run_thrusters(input, init_value=0, halt_code=99)[0]
+for input in all_inputs:
+    results[''.join(input)] = run_thrusters(input, init_value=0, halt_code=99, debug=False)
 
 max_key = max(results, key=results.get)
 print(f'{max_key}: {results[max_key]}')
+
+# print(results)
