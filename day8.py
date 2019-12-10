@@ -1,4 +1,5 @@
 import csv
+from pprint import pprint
 
 def get_picture_data():
     with open('input-files/day8.csv', 'r') as f:
@@ -33,25 +34,41 @@ def count_digit(picture_data_lists, digit):
         digits[i] = sum
     return digits
 
+def stack_images(picture_data_lists, num_layers, width, height):
+    canvas = [[0 for x in range(width)] for y in range(height)] 
+    for layer in picture_data_lists[::-1]:
+        for i in range(len(layer)):
+            row = layer[i]
+            for j in range(len(row)):
+                pixel = row[j]
+                if pixel == '2':
+                    continue
+                elif pixel == '1':
+                    pixel_value = "◼️ "
+                else:
+                    pixel_value = "◻️ "
+                canvas[i][j] = pixel_value
+    return canvas
+
+
+def get_part_a(picture_data_lists):
+    zeros_result = count_digit(picture_data_lists, '0')
+    # layer_index is the index of the layer with the min number of zeros
+    layer_index = min_max_from_dict(zeros_result, return_min=True)[0]
+    num_ones = count_digit(picture_data_lists, '1')[layer_index]
+    num_twos = count_digit(picture_data_lists, '2')[layer_index]
+
+    print(layer_index)
+    print(num_ones, num_twos)
+    print(num_ones * num_twos)
+
 picture_data = get_picture_data()
 
 width = 25
 height = 6
-num_layers = len(picture_data) / (width*height)
+num_layers = int(len(picture_data) / (width*height))
 
 picture_data_lists = picture_data_to_lists(picture_data, num_layers, width, height)
 
-zeros_result = count_digit(picture_data_lists, '0')
-# layer_index is the index of the layer with the min number of zeros
-layer_index = min_max_from_dict(zeros_result, return_min=True)[0]
-num_ones = count_digit(picture_data_lists, '1')[layer_index]
-num_twos = count_digit(picture_data_lists, '2')[layer_index]
-
-print(layer_index)
-print(num_ones, num_twos)
-print(num_ones * num_twos)
-
-with open('output-files/day8.csv', 'w') as f:
-    writer = csv.writer(f)
-    for row in picture_data_lists[0]:
-        writer.writerow(row)
+for i in stack_images(picture_data_lists, num_layers, width, height):
+    print(''.join(i))
