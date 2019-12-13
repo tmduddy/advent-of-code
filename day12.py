@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 def gen_moon_data():
     with open('input-files/day12.csv', 'r') as f:
         moon_data = []
@@ -36,24 +38,12 @@ def apply_vel(moon_data, moon_vel):
 def run_cycles(num_cycles, init_moon_data, init_moon_vel):
     moon_data = init_moon_data.copy()
     moon_vel = init_moon_vel.copy()
-    for _ in range(num_cycles):
+    for i in range(num_cycles):
         moon_vel = apply_accel(moon_data, moon_vel)
         moon_data = apply_vel(moon_data, moon_vel)
+        if i % 1000000 == 0:
+            print(int(i/1000000))
     return (moon_data, moon_vel)
-
-def repeat_history(init_moon_data, init_moon_vel):
-    moon_data = init_moon_data.copy()
-    moon_vel = init_moon_vel.copy()
-    counter = 0
-    visited_pos = []
-    while True:
-        moon_vel = apply_accel(moon_data, moon_vel)
-        moon_data = apply_vel(moon_data, moon_vel)
-        if moon_data in visited_pos:
-            break
-        visited_pos.append(moon_data)
-        counter += 1
-
 
 def calc_energy(moon_data, moon_vel):
     pot_en = []
@@ -66,15 +56,42 @@ def calc_energy(moon_data, moon_vel):
     result = sum([i*j for i, j in zip(pot_en, kin_en)])
     return result
 
+def repeat_history(init_moon_data, init_moon_vel):
+    init_state = (init_moon_data[:], init_moon_vel[:])
+
+    moon_data = init_moon_data.copy()
+    moon_vel = init_moon_vel.copy()
+    counter = 0
+    max_counter = 4686774924 #4,686,774,924
+    while True:
+        moon_vel = apply_accel(moon_data, moon_vel)
+        moon_data = apply_vel(moon_data, moon_vel)
+        print(moon_data)
+        print(init_state[0])
+        print()
+        if counter > 1 and (moon_data, moon_vel) == init_state:
+            print("found it")
+            break
+        if counter > max_counter:
+            print("max counter")
+            break
+        if counter % 1000000 == 0 and counter != 0:
+            print(counter)
+
+        counter += 1
+    return counter
+
+
 moon_data = gen_moon_data()
 moon_vel = [[0, 0, 0] for moon in moon_data]
 
 ### part A ###
 # final_moons, final_vels = run_cycles(1000, moon_data, moon_vel)
 # print(calc_energy(final_moons, final_vels))
+# print(final_moons)
 ### end part A ###
 
 
 ### part B ###
-repeat_history(moon_data, moon_vel)
+print(repeat_history(moon_data, moon_vel))
 ### end part B ###
