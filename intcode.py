@@ -21,7 +21,7 @@ def read_value_from_index(intcode, index, ret_int=True):
         intcode = intcode + [0] * length_needed
     return (int(intcode[index]) if ret_int else intcode[index], intcode)
 
-def parse_intcode(ic, init_input=None, later_input=None, init=True, init_pos=0, init_rel_base=0, halt_on_output=False, debug=False):
+def parse_intcode(ic, init_input=None, later_input=None, init=True, init_pos=0, init_rel_base=0, halt_on_output=False, print_out=True, debug=False):
     intcode = ic
     pos = init_pos
     rel_base = init_rel_base
@@ -90,7 +90,8 @@ def parse_intcode(ic, init_input=None, later_input=None, init=True, init_pos=0, 
             value = param_1
             pos += 2
             
-            print(f'\tOUT = {param_1}')
+            if print_out:
+                print(f'\tOUT = {param_1}')
 
             if halt_on_output:
                 halt_code = 4
