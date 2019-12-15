@@ -76,7 +76,7 @@ def parse_intcode(ic, init_input=None, later_input=None, init=True, init_pos=0, 
 
             intcode = write_value_to_index(intcode, index, value)
 
-            init = False
+            #init = False
             if debug:
                 print(f'\tINP: storing input {value} at index: {index}')
             pos += 2

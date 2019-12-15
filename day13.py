@@ -1,3 +1,5 @@
+import os
+import time
 from intcode import parse_intcode
 
 def get_fresh_intcode():
@@ -27,14 +29,15 @@ def draw_to_canvas(canvas, pos, value):
     canvas[y][x] = value
     return canvas
 
-def run_game(intcode):
+def run_frame(intcode, input_dir, score=0):
     game_inputs = []
     pos = 0
     rel = 0
     while True:
         # run intcode
         value, halt_code, pos, rel, intcode = parse_intcode(
-            intcode, 
+            intcode,
+            init_input=input_dir,
             init_pos=pos, 
             init_rel_base=rel, 
             halt_on_output=True,
@@ -59,16 +62,32 @@ def run_game(intcode):
     }
 
     for pos, val in game_inputs_formatted:
-        if pos = (-1, 0):
+        if pos == (-1, 0):
             score = val
             continue
         row = pos[1]
         col = pos[0]
         canvas[row][col] = val_dict[val]
-    return score, canvas
+    return score, canvas, intcode
         
-score, canvas = run_game(intcode)
+def run_game(intcode):
+    score = 0
+    intcode = intcode.copy()
+    intcode[0] = 2
+    while True:
+        now = time.time()
+        sum = 0
+        input_dir = -1
+        score, canvas, intcode = run_frame(intcode, input_dir)
+        print(score)
+        # os.system('clear')
+        for row in canvas:
+            print(''.join(row))
+            sum += row.count("♋️")
+        if sum == 0:
+            break
+        elapsed = time.time() - now
+        # time.sleep(1.-elapsed)  
+    print(f'GAME OVER: {score}')
 
-for row in canvas:
-    print(''.join(row))
-    sum += row.count("♋️")
+run_game(intcode)
