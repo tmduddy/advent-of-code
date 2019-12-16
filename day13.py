@@ -1,6 +1,6 @@
 import os
 import time
-from intcode import parse_intcode
+from intcode import IntcodeParser
 
 def get_fresh_intcode():
     with open('input-files/day13.csv', 'r') as f:
@@ -75,7 +75,6 @@ def run_game(intcode):
     intcode = intcode.copy()
     intcode[0] = 2
     while True:
-        now = time.time()
         sum = 0
         input_dir = -1
         score, canvas, intcode = run_frame(intcode, input_dir)
@@ -86,8 +85,6 @@ def run_game(intcode):
             sum += row.count("♋️")
         if sum == 0:
             break
-        elapsed = time.time() - now
-        # time.sleep(1.-elapsed)  
     print(f'GAME OVER: {score}')
 
 run_game(intcode)
