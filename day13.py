@@ -35,7 +35,14 @@ def run_frame(parser, intcode, input_dir, score=0):
     rel = 0
     while True:
         # run intcode
-        value, halt_code, pos, rel, intcode = parse_intcode()
+        value, halt_code, pos, rel, intcode = parser.parse_intcode(
+            intcode,
+            init_input=input_dir,
+            init_pos=pos, 
+            init_rel_base=rel, 
+            halt_on_output=True,
+            print_out=False
+        )
         if halt_code == 99:
             break
         game_inputs.append(value)
@@ -67,18 +74,11 @@ def run_game(intcode):
     score = 0
     intcode = intcode.copy()
     intcode[0] = 2
-    parser = IntcodeParser(
-        intcode,
-        init_input=input_dir,
-        init_pos=pos, 
-        init_rel_base=rel, 
-        halt_on_output=True,
-        print_out=False
-    )
+    parser = IntcodeParser()
     while True:
         sum = 0
         input_dir = -1
-        score, canvas, intcode = run_frame(intcode, input_dir)
+        score, canvas, intcode = run_frame(parser, intcode, input_dir)
         print(score)
         # os.system('clear')
         for row in canvas:
