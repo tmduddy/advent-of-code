@@ -1,24 +1,13 @@
 class IntcodeParser:
     
-    def __init__(
-        self,
-        intcode, 
-        init=True, 
-        init_input=None, 
-        init_pos=0, 
-        init_rel_base=0, 
-        halt_on_output=False, 
-        print_out=True, 
-        debug=False
-    ):
-        self.intcode = intcode
-        self.init = init
-        self.init_input = init_input
-        self.init_pos = init_pos
-        self.init_rel_base = init_rel_base
-        self.halt_on_output=halt_on_output
-        self.print_out = print_out
-        self.debug = debug
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def get_intcode_from_file(filename):
+        with open('input-files/day13.csv', 'r') as f:
+            for row in f:
+                return list(map(int, row.strip().split(',')))
     
     def get_index(self, intcode, param_mode, pos, rel_base):
         self.param_mode = int(param_mode)
@@ -43,18 +32,23 @@ class IntcodeParser:
             intcode = intcode + [0] * length_needed
         return (int(intcode[index]) if ret_int else intcode[index], intcode)
 
-    def parse_intcode(self):
+    def parse_intcode(
+        self,
+        intcode,
+        init=True, 
+        init_input=None, 
+        init_pos=0, 
+        init_rel_base=0,
+        max_count = 1000000,
+        halt_on_output=False, 
+        print_out=True, 
+        debug=False):
 
         # use normal var names #
-        pos = self.init_pos
-        rel_base = self.init_rel_base
-        intcode = self.intcode
-        init_input = self.init_input
-        debug = self.debug
-        print_out = self.print_out
+        pos = init_pos
+        rel_base = init_rel_base
 
         counter = 0 # counter to prevent infinite looping
-        max_count = 1000000
         
         while True:
             # aim the compiler at the current position and read the input as an instruction
@@ -121,7 +115,7 @@ class IntcodeParser:
                 if print_out:
                     print(f'\tOUT = {param_1}')
 
-                if self.halt_on_output:
+                if halt_on_output:
                     halt_code = 4
                     if debug:
                         print(f'HLT: halt on out enabled')
