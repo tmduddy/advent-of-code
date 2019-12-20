@@ -5,7 +5,7 @@ class IntcodeParser:
 
     @staticmethod
     def get_intcode_from_file(filename):
-        with open('input-files/day13.csv', 'r') as f:
+        with open(filename, 'r') as f:
             for row in f:
                 return list(map(int, row.strip().split(',')))
     
